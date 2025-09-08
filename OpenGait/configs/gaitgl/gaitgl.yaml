@@ -1,0 +1,68 @@
+# Note  : *** the batch_size should be equal to the gpus number at the test phase!!! ***
+data_cfg:
+  dataset_name: CASIA-B
+  dataset_root: ./CASIA-B-pkl
+  dataset_partition: ./datasets/CASIA-B/CASIA-B.json
+  num_workers: 1
+  remove_no_gallery: false
+  test_dataset_name: CASIA-B
+
+evaluator_cfg:
+  enable_float16: false
+  restore_ckpt_strict: false
+  restore_hint: 120000
+  save_name: GaitGL
+  sampler:
+    batch_size: 2
+    sample_type: all_ordered
+    type: InferenceSampler
+
+loss_cfg:
+  type: Waveloss  
+  loss_term_weight: 1.0
+  log_prefix: waveloss
+  margin: 0.2
+  l_min: -1.0
+  l_max: 1.0
+  cycles: 4
+  cycle_iters: 120000
+  log_accuracy: true
+  label_smooth: false
+
+model_cfg:
+  model: GaitGL
+  channels: [64, 128, 256]
+  class_num: 74
+
+optimizer_cfg:
+  lr: 5.0e-4
+  solver: Adam
+  weight_decay: 5.0e-4
+
+scheduler_cfg:
+  gamma: 0.1
+  milestones:
+    - 80000
+    - 95000
+  scheduler: MultiStepLR
+
+trainer_cfg:
+  find_unused_parameters: false
+  enable_float16: true
+  with_test: true
+  log_iter: 100
+  restore_ckpt_strict: false
+  restore_hint: 0
+  save_iter: 30000
+  save_name: GaitGL
+  sync_BN: false
+  total_iter: 120000
+  sampler:
+    batch_shuffle: true
+    batch_size:
+      - 4 # TripletSampler, batch_size[0] indicates Number of Identity
+      - 4 #                 batch_size[1] indicates Samples sequqnce for each Identity
+    frames_num_fixed: 30 # fixed frames number for training
+    frames_skip_num: 4
+    sample_type: fixed_ordered # fixed control input frames number, unordered for controlling order of input tensor; Other options: unfixed_ordered or all_ordered
+    type: TripletSampler
