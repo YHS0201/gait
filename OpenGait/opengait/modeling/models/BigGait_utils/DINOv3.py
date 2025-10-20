@@ -2,7 +2,6 @@
 #
 # This software may be used and distributed in accordance with
 # the terms of the DINOv3 License Agreement.
-
 import logging
 from functools import partial
 from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union
@@ -11,8 +10,8 @@ import torch
 import torch.nn.init
 from torch import Tensor, nn
 
-from dinov3.layers import LayerScale, Mlp, PatchEmbed, RMSNorm, RopePositionEmbedding, SelfAttentionBlock, SwiGLUFFN
-from dinov3.utils import named_apply
+from .dinov3_layers import LayerScale, Mlp, PatchEmbed, RMSNorm, RopePositionEmbedding, SelfAttentionBlock, SwiGLUFFN
+from .dinov3_utils import named_apply
 
 logger = logging.getLogger("dinov3")
 
@@ -255,12 +254,16 @@ class DinoVisionTransformer(nn.Module):
                 }
             )
         return output
-
+    
+    
+    
     def forward_features(self, x: Tensor | List[Tensor], masks: Optional[Tensor] = None) -> List[Dict[str, Tensor]]:
         if isinstance(x, torch.Tensor):
             return self.forward_features_list([x], [masks])[0]
         else:
             return self.forward_features_list(x, masks)
+    
+    
 
     def _get_intermediate_layers_not_chunked(self, x: Tensor, n: int = 1) -> List[Tensor]:
         x, (H, W) = self.prepare_tokens_with_masks(x)
@@ -317,7 +320,7 @@ class DinoVisionTransformer(nn.Module):
         elif return_class_token and return_extra_tokens:
             return tuple(zip(outputs, class_tokens, extra_tokens))
 
-    def forward(self, *args, is_training: bool = False, **kwargs) -> List[Dict[str, Tensor]] | Tensor:
+    def forward(self, *args, is_training=False, **kwargs):
         ret = self.forward_features(*args, **kwargs)
         if is_training:
             return ret
@@ -327,12 +330,27 @@ class DinoVisionTransformer(nn.Module):
 
 def vit_small(patch_size=16, **kwargs):
     model = DinoVisionTransformer(
-        patch_size=patch_size,
+        img_size=518,
+        patch_size=16,
+        in_chans=3,
+        pos_embed_rope_base=100.0,
+        pos_embed_rope_normalize_coords='separate',
+        pos_embed_rope_rescale_coords=2.0,
+        pos_embed_rope_dtype='fp32',
         embed_dim=384,
         depth=12,
         num_heads=6,
-        ffn_ratio=4,
-        **kwargs,
+        ffn_ratio=4.0,
+        qkv_bias=True,
+        drop_path_rate=0.0,
+        layerscale_init=1.0e-05,      
+        norm_layer='layernormbf16',
+        ffn_layer='mlp',
+        ffn_bias=True,
+        proj_bias=True,
+        n_storage_tokens=4,          
+        mask_k_bias=True,            
+        **kwargs
     )
     return model
 
@@ -351,11 +369,26 @@ def vit_base(patch_size=16, **kwargs):
 
 def vit_large(patch_size=16, **kwargs):
     model = DinoVisionTransformer(
-        patch_size=patch_size,
-        embed_dim=1024,
-        depth=24,
+        img_size=518,
+        patch_size=16,
+        in_chans=3,
+        pos_embed_rope_base=100.0,
+        pos_embed_rope_normalize_coords='separate',
+        pos_embed_rope_rescale_coords=2.0,
+        pos_embed_rope_dtype='fp32',
+        embed_dim=1024,                  # Large 宽度
+        depth=24,                        # Large 深度
         num_heads=16,
-        ffn_ratio=4,
+        ffn_ratio=4.0,
+        qkv_bias=True,
+        drop_path_rate=0.0,
+        layerscale_init=1.0e-05,
+        norm_layer='layernormbf16',
+        ffn_layer='mlp',
+        ffn_bias=True,
+        proj_bias=True,
+        n_storage_tokens=4,             
+        mask_k_bias=True,     
         **kwargs,
     )
     return model

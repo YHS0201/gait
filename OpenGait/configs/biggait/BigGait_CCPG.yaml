@@ -1,7 +1,7 @@
 data_cfg:
   dataset_name: CCPG
   # TODO
-  dataset_root: your_path # use datasets/pretreatment_rgb.py for data preprocessing!
+  dataset_root: ./ccpg_pkl # use datasets/pretreatment_rgb.py for data preprocessing!
   dataset_partition: ./datasets/CCPG/CCPG.json
   data_in_use: [True, True] # images / real_ratios
   num_workers: 8
@@ -12,11 +12,11 @@ evaluator_cfg:
   enable_float16: true
   restore_ckpt_strict: True
   restore_hint: 40000
-  save_name: BigGait__Dinov2_Gaitbase_Frame30
+  save_name: BigGait__Dinov3_vitl16_Gaitbase_Frame30
   eval_func: evaluate_CCPG
   sampler:
     batch_shuffle: false
-    batch_size: 8 # GPUs number
+    batch_size: 4 # GPUs number
     sample_type: all_ordered # all indicates whole sequence used to test, while ordered means input sequence by its natural order; Other options:   fixed_unordered
     frames_all_limit: 250 # limit the number of sampled frames to prevent out of memory
   metric: euc # cos
@@ -36,14 +36,14 @@ loss_cfg:
     log_accuracy: true
 
 model_cfg:
-  model: BigGait__Dinov2_Gaitbase
-  pretrained_dinov2: ./pretrained_LVMs/dinov2_vits14_pretrain.pth                   # DINOv2 Download Link: https://dl.fbaipublicfiles.com/dinov2/dinov2_vits14/dinov2_vits14_pretrain.pth
-  pretrained_mask_branch: ./pretrained_LVMs/MaskBranch_vits14.pt                # pretrained_mask_branch: None or MaskBranch Download Link: https://drive.google.com/drive/folders/1zrWPUsrbCpwxoLgfom3d2irgxkBqtXqc?usp=sharing
-  image_size: 224                                                               # 448x224
+  model: BigGait__Dinov3_Gaitbase
+  pretrained_dinov3: ./pretrained_LVMs/dinov3_vitl16.pth                  # DINOv2 Download Link: https://dl.fbaipublicfiles.com/dinov2/dinov2_vits14/dinov2_vits14_pretrain.pth
+  pretrained_mask_branch: None                # pretrained_mask_branch: None or MaskBranch Download Link: https://drive.google.com/drive/folders/1zrWPUsrbCpwxoLgfom3d2irgxkBqtXqc?usp=sharing
+  image_size: 256                                                               # 448x224
   sils_size: 32                                                                 # 64x32
 
   Denoising_Branch:
-    source_dim: 1536
+    source_dim: 4096
     target_dim: 16
     p: 0
     softmax: True
@@ -51,7 +51,7 @@ model_cfg:
     Up: False
 
   Appearance_Branch:
-    source_dim: 1536
+    source_dim: 4096
     target_dim: 16
     p: 0
     softmax: False
@@ -59,9 +59,9 @@ model_cfg:
     Up: False
 
   Mask_Branch:
-    source_dim: 384
+    source_dim: 1024
     target_dim: 2
-    p: 0.5
+    p: 0.1
     softmax: True
     Relu: False
     Up: True
@@ -103,7 +103,7 @@ model_cfg:
     - 16
 
 optimizer_cfg:
-  lr: 0.1
+  lr: 0.001
   momentum: 0.9
   solver: SGD
   weight_decay: 0.0005
@@ -127,13 +127,13 @@ trainer_cfg:
   restore_ckpt_strict: true
   restore_hint: 0
   save_iter: 10000
-  save_name: BigGait__Dinov2_Gaitbase_Frame30
-  sync_BN: true
+  save_name: BigGait__Dinov3_vitl16_Gaitbase_Frame30
+  sync_BN: false
   total_iter: 40000
   sampler:
     batch_shuffle: true
     batch_size:
-      - 8 # TripletSampler, batch_size[0] indicates Number of Identity
+      - 4 # TripletSampler, batch_size[0] indicates Number of Identity
       - 8 #                 batch_size[1] indicates Samples sequqnce for each Identity
     frames_num_fixed: 30 # fixed frames number for training
     frames_skip_num: 4

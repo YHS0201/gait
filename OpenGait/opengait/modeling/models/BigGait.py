@@ -17,10 +17,15 @@ from ..base_model import BaseModel
 from torch.nn import functional as F
 from kornia import morphology as morph
 import random
+from PIL import Image
+import numpy as np
+from sklearn.decomposition import PCA
+import sys
 
 # import GaitBase & DINOv3_small
 from .BigGait_utils.BigGait_GaitBase import Baseline
 from .BigGait_utils.DINOv3 import vit_small
+from .BigGait_utils.DINOv3 import vit_large
 from .BigGait_utils.save_img import save_image, pca_image
 
 # ######################################## BigGait ###########################################
@@ -107,14 +112,7 @@ class BigGait__Dinov3_Gaitbase(BaseModel):
         self.gait_net = Baseline(model_cfg)
 
     def init_DINOv3(self):
-        self.backbone = vit_small(
-            img_size=224,
-            patch_size=14,
-            embed_dim=384,
-            depth=12,
-            num_heads=6,
-            ffn_ratio=4.0,
-        )
+        self.backbone = vit_large(logger = self.msg_mgr)
         self.msg_mgr.log_info(f'load model from: {self.pretrained_dinov3}')
         pretrain_dict = torch.load(self.pretrained_dinov3)
         msg = self.backbone.load_state_dict(pretrain_dict, strict=True)
@@ -211,9 +209,9 @@ class BigGait__Dinov3_Gaitbase(BaseModel):
 
     def forward(self, inputs):
         if self.training:
-            if self.iteration == 500 and '.pt' in self.pretrained_mask_branch:
+            if self.iteration == 5000 and '.pt' in self.pretrained_mask_branch:
                 self.init_Mask_Branch()
-            if self.iteration >= 500:
+            if self.iteration >= 5000:
                 self.Mask_Branch.eval()
                 self.Mask_Branch.requires_grad_(False)
 
@@ -229,18 +227,53 @@ class BigGait__Dinov3_Gaitbase(BaseModel):
                 outs = self.preprocess(sils, self.image_size)                                           # [ns,c,448,224]    if have used pad_resize for input images
             else:
                 outs = self.preprocess(padding_resize(sils, ratios, 256, 128), self.image_size)         # [ns,c,448,224]    if have not used pad_resize for input images
+            
+            
             outs_dict = self.backbone(outs, is_training=True)
             outs_last1 = outs_dict["x_norm_patchtokens"].contiguous()
-            mid_layers = self.backbone.get_intermediate_layers(
-                outs,
-                n=[2, 5, 8, 11],
-                norm=True,
-                reshape=False,
-            )
+            #outs_last4 = outs["x_norm_patchtokens_mid4"].contiguous()
+            mid_layers = self.backbone.get_intermediate_layers(outs, n=[4, 10, 16, 22], norm=True, reshape=False)
             outs_last4 = torch.cat(mid_layers, dim=-1).contiguous()
+            
+            
+            #feat_vec = outs_last1[0]          # [h*w, c]
 
-            outs_last1 = rearrange(outs_last1.view(n, s, self.image_size//7, self.image_size//14, -1), 'n s h w c -> (n s) c h w').contiguous()
-            outs_last4 = rearrange(outs_last4.view(n, s, self.image_size//7, self.image_size//14, -1), 'n s h w c -> (n s) c h w').contiguous()
+            # 保存特征向量
+            #torch.save(feat_vec, "./feat_00_v2.pt")
+            
+            #orig_img = sils[0]
+            #orig_img = (orig_img * 255).clamp(0, 255).cpu().numpy().astype(np.uint8)
+            #if orig_img.shape[0] == 1:
+            #    orig_img = np.repeat(orig_img, 3, axis=0)
+            #else:                                      # 3 通道
+            #    orig_img = orig_img.transpose(1, 2, 0)
+            #Image.fromarray(orig_img).save("orig_00.png")
+            
+            
+            # PCA 可视化并保存
+            #tokens = outs_last1[0].cpu().numpy()
+            #H, W = 32, 16
+            #rgb = PCA(n_components=3, whiten=True).fit_transform(tokens)
+            #rgb = (rgb - rgb.min()) / (rgb.max() - rgb.min())
+
+            #img_pca = rgb.reshape(H, W, 3)
+            #img_pca = (img_pca * 255).astype(np.uint8)
+            #img_pca = Image.fromarray(img_pca).resize((W * 16, H * 16), Image.NEAREST)
+            #out_path = 'dnov2_biggait_patch_tokens_raw_pca.png'
+            #img_pca.save(out_path)
+            #print(f'DINOv3 patch tokens 可视化已保存 -> {out_path}')
+            
+            #print("✅ 特征与可视化图已保存，程序立即终止。")
+            
+            #sys.exit(0)
+            
+            
+            
+            
+            
+            
+            outs_last1 = rearrange(outs_last1.view(n, s, self.image_size//8, self.image_size//16, -1), 'n s h w c -> (n s) c h w').contiguous()
+            outs_last4 = rearrange(outs_last4.view(n, s, self.image_size//8, self.image_size//16, -1), 'n s h w c -> (n s) c h w').contiguous()
             outs_last1 = self.preprocess(outs_last1, self.sils_size) # [ns,c,64,32]
             outs_last4 = self.preprocess(outs_last4, self.sils_size) # [ns,c,64,32]
             outs_last1 = rearrange(outs_last1.view(n, s, -1, self.sils_size*2, self.sils_size), 'n s c h w -> (n s) (h w) c').contiguous()
@@ -260,6 +293,10 @@ class BigGait__Dinov3_Gaitbase(BaseModel):
         del fore_feat, mask
 
         # get denosing
+        
+        #print("foreground shape:", foreground.shape)
+        #print("outs_last4 shape:", outs_last4.shape)
+        
         denosing = outs_last4.view(-1, self.fc_dim)[foreground.view(-1) != 0]
         den_feat, _ = self.Denoising_Branch(denosing)
         denosing = torch.zeros_like(foreground, dtype=den_feat.dtype, device=den_feat.device).view(-1,1).repeat(1,self.denoising_dim)
@@ -279,13 +316,28 @@ class BigGait__Dinov3_Gaitbase(BaseModel):
         # vis
         if self.training:
             try:
-                vis_num = min(5, n*s)
+                vis_num = min(10, n*s)
                 vis_mask = foreground.view(n*s, self.sils_size*2*self.sils_size, -1)[:vis_num].detach().cpu().numpy()
                 vis_denosing = pca_image(data={'embeddings':denosing.view(n*s, self.sils_size*2*self.sils_size, -1)[:vis_num].detach().cpu().numpy()}, mask=vis_mask, root=None, model_name=None, dataset=None, n_components=3, is_return=True) # n s c h w
                 vis_appearance = pca_image(data={'embeddings':appearance.view(n*s, self.sils_size*2*self.sils_size, -1)[:vis_num].detach().cpu().numpy()}, mask=vis_mask, root=None, model_name=None, dataset=None, n_components=3, is_return=True) # n s c h w
-            except:
+                
+                fake_mask = np.ones((vis_num, self.sils_size*2*self.sils_size), dtype=np.uint8)
+                
+                #print('PCA start')
+                #print('outs_last1:', outs_last1 is None, outs_last1.shape)
+                #dino_embs = outs_last1.view(vis_num, -1, outs_last1.size(1))
+                #print('dino_embs:', dino_embs.shape, dino_embs.min(), dino_embs.max())
+                
+                vis_raw_dino = pca_image(data={'embeddings':outs_last1.view(n*s, self.sils_size*2*self.sils_size, -1)[:vis_num].detach().cpu().numpy()}, mask=fake_mask, root=None, model_name=None, dataset=None, n_components=3, is_return=True)
+                #print('PCA ok', vis_raw_dino.min(), vis_raw_dino.max())
+                
+            except Exception as e:
+                
+                print('PCA failed:', e)
                 vis_denosing = torch.ones_like(foreground).view(n,s,1,self.sils_size*2,self.sils_size).detach().cpu().numpy()
                 vis_appearance = torch.ones_like(foreground).view(n,s,1,self.sils_size*2,self.sils_size).detach().cpu().numpy()
+                
+                vis_raw_dino = torch.ones_like(foreground).view(n,s,1,self.sils_size*2,self.sils_size).detach().cpu().numpy()
 
         # Black DA
         if self.training:
@@ -318,6 +370,7 @@ class BigGait__Dinov3_Gaitbase(BaseModel):
                     'image/foreground': self.min_max_norm(rearrange(foreground.view(n, s, self.sils_size*2, self.sils_size, -1), 'n s h w c -> (n s) c h w').contiguous()),
                     'image/denosing':self.min_max_norm(rearrange(torch.from_numpy(vis_denosing).float(), 'n s c h w -> (n s) c h w').contiguous()),
                     'image/appearance': self.min_max_norm(rearrange(torch.from_numpy(vis_appearance).float(), 'n s c h w -> (n s) c h w').contiguous()),
+                    'image/raw_dino': self.min_max_norm(rearrange(torch.from_numpy(vis_raw_dino).float(), 'n s c h w -> (n s) c h w')),
                 },
                 'inference_feat': {
                     'embeddings': embed_1
