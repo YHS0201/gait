@@ -1,0 +1,35 @@
+study_name: swingait_cross_dataset
+
+metric:
+  mode: casiab_rank1_mean
+
+parameters:
+  model_cfg.recon.mask_ratio:
+    type: float
+    low: 0.2
+    high: 0.6
+    step: 0.1
+
+  model_cfg.recon.lambda:
+    type: float
+    low: 0.5
+    high: 20.0
+    step: 0.5
+
+  model_cfg.recon.lambda_edge:
+    type: float
+    low: 0.5
+    high: 10.0
+    step: 0.5
+
+  model_cfg.recon.edge_sobel_thr_ratio:
+    type: float
+    low: 0.1
+    high: 0.35
+    step: 0.05
+
+  model_cfg.recon.edge_sobel_thr_abs:
+    type: float
+    low: 0.0
+    high: 0.03
+    step: 0.01

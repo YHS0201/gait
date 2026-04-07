@@ -1,0 +1,96 @@
+data_cfg:
+  dataset_name: CASIA-B
+  dataset_root: ./CASIA-B-pkl
+  dataset_partition: ./datasets/CASIA-B/CASIA-B.json
+  num_workers: 1
+  remove_no_gallery: false
+  test_dataset_name: CASIA-B
+
+evaluator_cfg:
+  enable_float16: true
+  restore_ckpt_strict: true
+  restore_hint: "output/CCPG/SwinGaitNEW/SwinGait3D_B1122_C2/checkpoints/SwinGait3D_B1122_C2-60000.pt"
+  save_name: SwinGait3D_B1122_C2
+  sampler:
+    batch_shuffle: false
+    batch_size: 3
+    sample_type: all_ordered
+    frames_all_limit: 720
+  metric: euc
+  transform:
+    - type: BaseSilCuttingTransform
+
+loss_cfg:
+  - loss_term_weight: 1.0
+    margin: 0.2
+    type: TripletLoss
+    log_prefix: triplet
+  - loss_term_weight: 1.0
+    scale: 16
+    type: CrossEntropyLoss
+    log_prefix: softmax
+    log_accuracy: true
+
+model_cfg:
+  model: SwinGaitNEW
+  Backbone:
+    mode: p3d
+    in_channels: 1
+    layers:
+      - 1
+      - 1
+      - 2
+      - 2
+    channels:
+      - 64
+      - 128
+  bin_num:
+    - 15
+  SeparateBNNecks:
+    in_channels: 256
+    class_num: 100        # CASIA-B 类别数
+    parts_num: 16
+
+optimizer_cfg:
+  lr: 0.0003
+  solver: AdamW
+  weight_decay: 0.02
+
+scheduler_cfg:
+  gamma: 0.1
+  milestones:
+    - 100000000
+  scheduler: MultiStepLR
+
+trainer_cfg:
+  enable_float16: true
+  fix_BN: false
+  log_iter: 100
+  with_test: false       # 该配置主要用于评测
+  optimizer_reset: true
+  restore_ckpt_strict: false
+  restore_hint: 0
+  save_iter: 20000
+  save_name: SwinGait3D_B1122_C2
+  sync_BN: true
+  T_max_iter: 60000
+  total_iter: 80000
+  sampler:
+    batch_shuffle: true
+    batch_size:
+      - 3
+      - 16
+    frames_num_fixed: 30
+    frames_skip_num: 4
+    sample_type: fixed_ordered
+    type: TripletSampler
+  transform:
+    - type: Compose
+      trf_cfg:
+        - type: RandomPerspective
+          prob: 0.2
+        - type: BaseSilCuttingTransform
+        - type: RandomHorizontalFlip
+          prob: 0.2
+        - type: RandomRotate
+          prob: 0.2

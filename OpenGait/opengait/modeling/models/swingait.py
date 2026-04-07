@@ -784,10 +784,10 @@ import os.path as osp
 from collections import OrderedDict
 from utils import get_valid_args, get_attr_from
 
-class SwinGait(BaseModel):
+class SwinGaitNEW(BaseModel):
     def __init__(self, cfgs, training): 
         self.T_max_iter = cfgs['trainer_cfg']['T_max_iter']
-        super(SwinGait, self).__init__(cfgs, training=training)
+        super(SwinGaitNEW, self).__init__(cfgs, training=training)
 
     def build_network(self, model_cfg):
         channels = model_cfg['Backbone']['channels']
@@ -817,6 +817,37 @@ class SwinGait(BaseModel):
             patch_norm = True, 
         )
 
+        # Input masking config
+        mask_cfg = model_cfg.get('recon', {}) if isinstance(model_cfg, dict) else {}
+        self.input_mask_enabled = mask_cfg.get('enabled', True)
+        self.input_mask_ratio = mask_cfg.get('mask_ratio', 0.9)
+        # reconstruction loss weight to avoid decoder dominating
+        self.lambda_recon = float(mask_cfg.get('lambda', 1.0))
+        self.lambda_edge = float(mask_cfg.get('lambda_edge', 1.0))
+        self.boundary_mask_ratio = float(mask_cfg.get('boundary_mask_ratio', 0.5))
+        self.lambda_edge_full = float(mask_cfg.get('lambda_edge_full', 0.2))
+        self.lambda_edge_dice = float(mask_cfg.get('lambda_edge_dice', 0.5))
+        self.edge_sobel_thr_ratio = float(mask_cfg.get('edge_sobel_thr_ratio', 0.2))
+        self.edge_sobel_thr_abs = float(mask_cfg.get('edge_sobel_thr_abs', 0.0))
+
+        # Simple decoder for reconstruction (predict sil frames at encoder resolution)
+        self.decoder = nn.Sequential(
+            nn.Conv3d(512, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv3d(256, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv3d(64, 1, kernel_size=1)
+        )
+
+        # Edge decoder predicts edge logits at encoder resolution.
+        self.decoder_edge = nn.Sequential(
+            nn.Conv3d(512, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv3d(256, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv3d(64, 1, kernel_size=1)
+        )
+
         self.FCs = SeparateFCs(model_cfg['SeparateBNNecks']['parts_num'], in_channels=512, out_channels=256)
         self.BNNecks = SeparateBNNecks(**model_cfg['SeparateBNNecks'])
         self.TP = PackSequenceWrapper(torch.max)
@@ -832,6 +863,8 @@ class SwinGait(BaseModel):
         params_list = [
             {'params': [p for n, p in transformer_params if any(nd in n for nd in transformer_no_decay)], 'lr': optimizer_cfg['lr'], 'weight_decay': 0.}, 
             {'params': [p for n, p in transformer_params if not any(nd in n for nd in transformer_no_decay)], 'lr': optimizer_cfg['lr'], 'weight_decay': optimizer_cfg['weight_decay']}, 
+            {'params': self.decoder.parameters(), 'lr': optimizer_cfg['lr'], 'weight_decay': optimizer_cfg['weight_decay']},
+            {'params': self.decoder_edge.parameters(), 'lr': optimizer_cfg['lr'], 'weight_decay': optimizer_cfg['weight_decay']},
             {'params': self.FCs.parameters(), 'lr': optimizer_cfg['lr'] * 0.1, 'weight_decay': optimizer_cfg['weight_decay']}, 
             {'params': self.BNNecks.parameters(), 'lr': optimizer_cfg['lr'] * 0.1, 'weight_decay': optimizer_cfg['weight_decay']}, 
         ]
@@ -885,21 +918,165 @@ class SwinGait(BaseModel):
             )
         return nn.Sequential(*layers)
 
+    def _build_edge_target(self, sils):
+        """Build binary edge target from silhouette frames using Sobel + morphology gradient."""
+        B, _, T, H, W = sils.shape
+        x2d = sils.permute(0, 2, 1, 3, 4).contiguous().view(B * T, 1, H, W)
+
+        kx = torch.tensor([[-1.0, 0.0, 1.0],
+                           [-2.0, 0.0, 2.0],
+                           [-1.0, 0.0, 1.0]], device=x2d.device, dtype=x2d.dtype).view(1, 1, 3, 3)
+        ky = torch.tensor([[-1.0, -2.0, -1.0],
+                           [0.0, 0.0, 0.0],
+                           [1.0, 2.0, 1.0]], device=x2d.device, dtype=x2d.dtype).view(1, 1, 3, 3)
+
+        gx = F.conv2d(x2d, kx, padding=1)
+        gy = F.conv2d(x2d, ky, padding=1)
+        grad_mag = torch.sqrt(gx * gx + gy * gy + 1e-12)
+
+        max_per_frame = grad_mag.flatten(2).amax(dim=2, keepdim=True).view(B * T, 1, 1, 1)
+        thr = self.edge_sobel_thr_ratio * max_per_frame + self.edge_sobel_thr_abs
+        sobel_edge = (grad_mag > thr).to(x2d.dtype)
+
+        sil_bin = (x2d > 0.5).to(x2d.dtype)
+        dilate = F.max_pool2d(sil_bin, kernel_size=3, stride=1, padding=1)
+        erode = 1.0 - F.max_pool2d(1.0 - sil_bin, kernel_size=3, stride=1, padding=1)
+        morph_edge = (dilate - erode).clamp(0.0, 1.0)
+
+        edge = torch.maximum(sobel_edge, morph_edge)
+        edge = edge.view(B, T, 1, H, W).permute(0, 2, 1, 3, 4).contiguous()
+        return edge
+
+    def _build_boundary_band(self, sils):
+        """Build a thin boundary band from silhouette frames for mask sampling."""
+        B, _, T, H, W = sils.shape
+        x2d = sils.permute(0, 2, 1, 3, 4).contiguous().view(B * T, 1, H, W)
+        sil_bin = (x2d > 0.5).to(x2d.dtype)
+        dilate = F.max_pool2d(sil_bin, kernel_size=3, stride=1, padding=1)
+        erode = 1.0 - F.max_pool2d(1.0 - sil_bin, kernel_size=3, stride=1, padding=1)
+        band = (dilate - erode).clamp(0.0, 1.0)
+        band = band.view(B, T, 1, H, W).permute(0, 2, 1, 3, 4).contiguous()
+        return band
+
+    def _masked_dice_loss(self, logits, targets, mask=None, eps=1e-6):
+        probs = torch.sigmoid(logits)
+        if mask is not None:
+            probs = probs * mask
+            targets = targets * mask
+        inter = (probs * targets).sum()
+        denom = probs.sum() + targets.sum()
+        return 1.0 - (2.0 * inter + eps) / (denom + eps)
+
     def forward(self, inputs):
         if self.training:
             adjust_learning_rate(self.optimizer, self.iteration, T_max_iter=self.T_max_iter)
         ipts, labs, _, _, seqL = inputs
 
         sils = ipts[0].unsqueeze(1)
+        orig_sils = sils
+
+        # optionally apply temporal-consistent patch masking:
+        # once a spatial patch is masked, it is masked across all frames
+        if getattr(self, 'input_mask_enabled', False) and self.training:
+            # ratio 表示“人体区域(前景 patch)的掩码率”，例如 0.5 表示 mask 掉 50% 的人体 patch
+            ratio = float(self.input_mask_ratio)
+            ratio = max(0.0, min(ratio, 1.0))
+            B, _, S, H, W = sils.shape
+            #print(f"Original input size -> H: {H}, W: {W}")
+            # 掩码网格固定为 4x4，仅用于置 0，与 transformer 的 patch 无关
+            ph, pw = 4, 4
+            if (H % ph != 0) or (W % pw != 0):
+                raise ValueError(f"Masking requires input divisible by 4x4. Got H={H}, W={W}.")
+
+            grid_h = H // ph
+            grid_w = W // pw
+
+            # 生成 patch 级二值掩码（时序一致）：只在第一帧选 patch，但会 mask 全部帧同位置
+            # 优先 mask 人体区域：只在“人体 patch 集合”内做采样，且掩码数按人体 patch 数量计算
+            num_patches = grid_h * grid_w
+
+            # 使用第一帧计算前景占比（silhouette>0 视作人体）
+            fg0 = (sils[:, :, 0] > 0).to(torch.float32)  # [B,1,H,W]
+            fg_patch = fg0.view(B, 1, grid_h, ph, grid_w, pw).mean(dim=(3, 5))  # [B,1,grid_h,grid_w]
+            fg_patch_flat = fg_patch.view(B, num_patches)
+            boundary0 = self._build_boundary_band(sils[:, :, :1]).squeeze(2)
+            boundary_patch = boundary0.view(B, 1, grid_h, ph, grid_w, pw).mean(dim=(3, 5))
+            boundary_patch_flat = boundary_patch.view(B, num_patches)
+
+            # patch 被视作“人体区域”的阈值：该 patch 内至少有一定比例为前景
+            fg_thr = 0.05
+            boundary_thr = 0.02
+
+            # 避免权重全 0；power 越大越偏向于 mask 前景占比更高的 patch
+            bg_eps = 1e-2
+            power = 2.0
+
+            patch_mask_flat = torch.zeros(B, num_patches, device=sils.device, dtype=sils.dtype)
+            for b in range(B):
+                fg_mask = fg_patch_flat[b] > fg_thr
+                boundary_mask = (boundary_patch_flat[b] > boundary_thr) & fg_mask
+                num_fg = int(fg_mask.sum().item())
+
+                if num_fg <= 0:
+                    # 若第一帧几乎无前景（异常/空帧），退化为全图均匀采样
+                    num_mask_b = int(ratio * num_patches)
+                    num_mask_b = max(0, min(num_mask_b, num_patches))
+                    if num_mask_b > 0:
+                        idx = torch.randperm(num_patches, device=sils.device)[:num_mask_b]
+                        patch_mask_flat[b, idx] = 1.0
+                    continue
+
+                num_mask_b = int(ratio * num_fg)
+                num_mask_b = max(0, min(num_mask_b, num_fg))
+                if num_mask_b <= 0:
+                    continue
+
+                num_boundary = min(int(round(num_mask_b * self.boundary_mask_ratio)), int(boundary_mask.sum().item()))
+                num_boundary = max(0, min(num_boundary, num_mask_b))
+
+                selected = []
+                if num_boundary > 0:
+                    boundary_w = (boundary_patch_flat[b] + bg_eps).pow(power)
+                    boundary_w = boundary_w * boundary_mask.to(boundary_w.dtype)
+                    if float(boundary_w.sum()) <= 0.0:
+                        boundary_w = boundary_mask.to(boundary_w.dtype)
+                    boundary_idx = torch.multinomial(boundary_w, num_boundary, replacement=False)
+                    patch_mask_flat[b, boundary_idx] = 1.0
+                    selected.append(boundary_idx)
+
+                remain = num_mask_b - num_boundary
+                if remain > 0:
+                    remain_mask = fg_mask.clone()
+                    if selected:
+                        remain_mask[selected[0]] = False
+                    remain_w = (fg_patch_flat[b] + bg_eps).pow(power)
+                    remain_w = remain_w * remain_mask.to(remain_w.dtype)
+                    if float(remain_w.sum()) <= 0.0:
+                        remain_w = remain_mask.to(remain_w.dtype)
+                    if float(remain_w.sum()) > 0.0:
+                        remain_idx = torch.multinomial(remain_w, remain, replacement=False)
+                        patch_mask_flat[b, remain_idx] = 1.0
+
+            pm = patch_mask_flat.view(B, 1, grid_h, grid_w)
+
+            # 精确重复到原图大小，不做插值或边缘填充
+            spatial_mask = pm.repeat_interleave(ph, dim=2).repeat_interleave(pw, dim=3)  # [B,1,H,W]
+            # 正确广播到时间维，避免通道维被错误扩展为 S
+            spatial_mask_t = spatial_mask.unsqueeze(2).expand(B, 1, S, H, W)  # [B,1,S,H,W]
+            masked_sils = sils * (1.0 - spatial_mask_t)
+        else:
+            masked_sils = sils
 
         del ipts
 
-        out0 = self.layer0(sils)
+        out0 = self.layer0(masked_sils)
         out1 = self.layer1(out0)
         out2 = self.layer2(out1) # [n, c, s, h, w]
         out2 = self.ulayer(out2)
-        out4 = self.transformer(out2) # [n, 768, s/4, 4, 3]
+        out4 = self.transformer(out2) # [n, C, Sd, Hd, Wd]
 
+        # Reconstruction + MSE: only compute during training to avoid eval-time overhead
+        
         # Temporal Pooling, TP
         outs = self.TP(out4, seqL, options={"dim": 2})[0]  # [n, c, h, w]
         # Horizontal Pooling Matching, HPM
@@ -926,6 +1103,59 @@ class SwinGait(BaseModel):
                 'embeddings': embed
             }
         }
+        
+        if self.training and getattr(self, 'input_mask_enabled', False):
+            # Reconstruction with simple decoder at encoder resolution
+            recon = self.decoder(out4)  # [n, 1, Sd, Hd, Wd]
+            edge_logits = self.decoder_edge(out4)  # [n, 1, Sd, Hd, Wd]
+
+            # Upsample reconstruction to original resolution and compute loss at input scale
+            B, _, S, H0, W0 = orig_sils.shape
+            _, _, Sd, Hd, Wd = recon.shape
+            recon_up = F.interpolate(
+                recon.view(B * Sd, 1, Hd, Wd), size=(H0, W0), mode='bilinear', align_corners=False
+            ).view(B, 1, Sd, H0, W0)
+            edge_logits_up = F.interpolate(
+                edge_logits.view(B * Sd, 1, Hd, Wd), size=(H0, W0), mode='bilinear', align_corners=False
+            ).view(B, 1, Sd, H0, W0)
+
+            # Enforce temporal length equality between input and reconstruction
+            assert S == Sd, f"Temporal mismatch: input S={S}, recon Sd={Sd}"
+            T = S
+            recon_up = recon_up[:, :, :T]
+            edge_logits_up = edge_logits_up[:, :, :T]
+            target = orig_sils[:, :, :T]
+            edge_target = self._build_edge_target(target).to(target.dtype)
+
+            # Compute MSE only on masked spatial regions (temporal-consistent, defined at original scale)
+            # spatial_mask: [B,1,1,H0,W0] -> expand over time
+            m = spatial_mask.unsqueeze(2).expand(B, 1, T, H0, W0)
+            diff2 = (recon_up - target) ** 2
+            denom = m.sum().clamp_min(1.0)
+            recon_mse = (diff2 * m).sum() / denom
+            edge_bce_map = F.binary_cross_entropy_with_logits(edge_logits_up, edge_target, reduction='none')
+            edge_bce_masked = (edge_bce_map * m).sum() / denom
+            edge_bce_full = edge_bce_map.mean()
+            edge_dice = self._masked_dice_loss(edge_logits_up, edge_target, m)
+            edge_loss = edge_bce_masked + self.lambda_edge_full * edge_bce_full + self.lambda_edge_dice * edge_dice
+
+            # Attach reconstruction MSE loss (tensor) so LossAggregator can sum it directly
+            retval['training_feat']['recon_mse'] = self.lambda_recon * recon_mse
+            retval['training_feat']['edge_bce'] = self.lambda_edge * edge_loss
+
+            # Visual summaries for reconstruction (training only)
+            retval['visual_summary']['image/recon'] = rearrange(recon_up.detach(), 'n c s h w -> (n s) c h w')
+            retval['visual_summary']['image/recon_edge'] = rearrange(torch.sigmoid(edge_logits_up.detach()), 'n c s h w -> (n s) c h w')
+            retval['visual_summary']['image/target_edge'] = rearrange(edge_target.detach(), 'n c s h w -> (n s) c h w')
+            retval['visual_summary']['image/masked'] = rearrange(masked_sils[:, :, :T], 'n c s h w -> (n s) c h w')
+            retval['visual_summary']['image/target'] = rearrange(target, 'n c s h w -> (n s) c h w')
+        # Attach reconstruction MSE loss (tensor) so LossAggregator can sum it directly
+        #retval['training_feat']['recon_mse'] = recon_mse
+
+        # Visual summaries for reconstruction
+        #retval['visual_summary']['image/recon'] = rearrange(recon_up.detach(), 'n c s h w -> (n s) c h w')
+        #retval['visual_summary']['image/masked'] = rearrange(masked_sils[:, :, :T], 'n c s h w -> (n s) c h w')
+        #retval['visual_summary']['image/target'] = rearrange(target, 'n c s h w -> (n s) c h w')
         return retval
 
 import math

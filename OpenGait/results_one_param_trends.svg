@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1180" viewBox="0 0 1500 1180">
+<rect width="100%" height="100%" fill="#fafafa"/>
+<text x="34.0" y="38.0" font-size="28" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">OpenGait One-Parameter Trends</text>
+<text x="34.0" y="64.0" font-size="14" font-weight="normal" text-anchor="start" fill="#555" font-family="Segoe UI, Arial, sans-serif">Prefer 4-fixed slices; if unavailable, fallback to 3-fixed slices with averaging over the remaining free parameter</text>
+<rect x="60" y="110" width="660" height="300" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="74.0" y="134.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Trend: mask_ratio</text>
+<text x="74.0" y="156.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed lambda=2.5, lambda_edge=4.5, edge_sobel_thr_ratio=0.2; averaged over edge_sobel_thr_abs</text>
+<line x1="120" y1="368.0" x2="696" y2="368.0" stroke="#efefef"/>
+<text x="112.0" y="372.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.90</text>
+<line x1="120" y1="305.3" x2="696" y2="305.3" stroke="#efefef"/>
+<text x="112.0" y="309.3" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.29</text>
+<line x1="120" y1="242.7" x2="696" y2="242.7" stroke="#efefef"/>
+<text x="112.0" y="246.7" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.68</text>
+<line x1="120" y1="180.0" x2="696" y2="180.0" stroke="#efefef"/>
+<text x="112.0" y="184.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">58.08</text>
+<polyline points="120.0,188.0 696.0,360.0" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="120.0" cy="188.0" r="6" fill="#d7263d"/>
+<text x="120.0" y="176.0" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">0.3: 58.027</text>
+<circle cx="108.0" cy="188.0" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="120.0" y="386.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">0.3</text>
+<circle cx="696.0" cy="360.0" r="6" fill="#d7263d"/>
+<text x="696.0" y="348.0" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">0.5: 56.950</text>
+<circle cx="684.0" cy="360.0" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="696.0" y="386.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">0.5</text>
+<text x="408.0" y="400.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">mask_ratio</text>
+<rect x="780" y="110" width="660" height="300" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="794.0" y="134.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Trend: lambda</text>
+<text x="794.0" y="156.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed mask_ratio=0.3, edge_sobel_thr_ratio=0.15, edge_sobel_thr_abs=0.01; averaged over lambda_edge</text>
+<line x1="840" y1="368.0" x2="1416" y2="368.0" stroke="#efefef"/>
+<text x="832.0" y="372.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.12</text>
+<line x1="840" y1="305.3" x2="1416" y2="305.3" stroke="#efefef"/>
+<text x="832.0" y="309.3" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.79</text>
+<line x1="840" y1="242.7" x2="1416" y2="242.7" stroke="#efefef"/>
+<text x="832.0" y="246.7" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.47</text>
+<line x1="840" y1="180.0" x2="1416" y2="180.0" stroke="#efefef"/>
+<text x="832.0" y="184.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">58.14</text>
+<polyline points="840.0,184.7 1059.4,330.0 1416.0,363.3" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="840.0" cy="184.7" r="6" fill="#d7263d"/>
+<text x="840.0" y="172.7" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">7: 58.087</text>
+<circle cx="828.0" cy="184.7" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="840.0" y="386.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">7</text>
+<circle cx="1059.4" cy="330.0" r="6" fill="#d7263d"/>
+<text x="1059.4" y="318.0" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">11: 56.530</text>
+<circle cx="1047.4" cy="330.0" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="1059.4" y="386.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">11</text>
+<circle cx="1416.0" cy="363.3" r="6" fill="#d7263d"/>
+<text x="1416.0" y="351.3" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">17.5: 56.173</text>
+<circle cx="1404.0" cy="363.3" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="1416.0" y="386.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">17.5</text>
+<text x="1128.0" y="400.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">lambda</text>
+<rect x="60" y="450" width="660" height="300" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="74.0" y="474.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Trend: lambda_edge</text>
+<text x="74.0" y="496.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed mask_ratio=0.3, edge_sobel_thr_ratio=0.15, edge_sobel_thr_abs=0.01; averaged over lambda</text>
+<line x1="120" y1="708.0" x2="696" y2="708.0" stroke="#efefef"/>
+<text x="112.0" y="712.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.12</text>
+<line x1="120" y1="645.3" x2="696" y2="645.3" stroke="#efefef"/>
+<text x="112.0" y="649.3" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.79</text>
+<line x1="120" y1="582.7" x2="696" y2="582.7" stroke="#efefef"/>
+<text x="112.0" y="586.7" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.47</text>
+<line x1="120" y1="520.0" x2="696" y2="520.0" stroke="#efefef"/>
+<text x="112.0" y="524.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">58.14</text>
+<polyline points="120.0,703.3 504.0,524.7 696.0,670.0" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="120.0" cy="703.3" r="6" fill="#d7263d"/>
+<text x="120.0" y="691.3" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">3: 56.173</text>
+<circle cx="108.0" cy="703.3" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="120.0" y="726.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">3</text>
+<circle cx="504.0" cy="524.7" r="6" fill="#d7263d"/>
+<text x="504.0" y="512.7" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">6: 58.087</text>
+<circle cx="492.0" cy="524.7" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="504.0" y="726.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">6</text>
+<circle cx="696.0" cy="670.0" r="6" fill="#d7263d"/>
+<text x="696.0" y="658.0" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">7.5: 56.530</text>
+<circle cx="684.0" cy="670.0" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="696.0" y="726.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">7.5</text>
+<text x="408.0" y="740.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">lambda_edge</text>
+<rect x="780" y="450" width="660" height="300" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="794.0" y="474.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Trend: edge_sobel_thr_ratio</text>
+<text x="794.0" y="496.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed mask_ratio=0.3, lambda=2.5, edge_sobel_thr_abs=0.01; averaged over lambda_edge</text>
+<line x1="840" y1="708.0" x2="1416" y2="708.0" stroke="#efefef"/>
+<text x="832.0" y="712.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.11</text>
+<line x1="840" y1="645.3" x2="1416" y2="645.3" stroke="#efefef"/>
+<text x="832.0" y="649.3" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.43</text>
+<line x1="840" y1="582.7" x2="1416" y2="582.7" stroke="#efefef"/>
+<text x="832.0" y="586.7" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.75</text>
+<line x1="840" y1="520.0" x2="1416" y2="520.0" stroke="#efefef"/>
+<text x="832.0" y="524.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">58.08</text>
+<polyline points="840.0,529.7 1416.0,698.3" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="840.0" cy="529.7" r="6" fill="#d7263d"/>
+<text x="840.0" y="517.7" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">0.2: 58.027</text>
+<circle cx="828.0" cy="529.7" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="840.0" y="726.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">0.2</text>
+<circle cx="1416.0" cy="698.3" r="6" fill="#d7263d"/>
+<text x="1416.0" y="686.3" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">0.25: 57.157</text>
+<circle cx="1404.0" cy="698.3" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="1416.0" y="726.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">0.25</text>
+<text x="1128.0" y="740.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">edge_sobel_thr_ratio</text>
+<rect x="410" y="790" width="680" height="300" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="424.0" y="814.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Trend: edge_sobel_thr_abs</text>
+<text x="424.0" y="836.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed lambda=2.5, lambda_edge=4.5, edge_sobel_thr_ratio=0.2; averaged over mask_ratio</text>
+<line x1="470" y1="1048.0" x2="1066" y2="1048.0" stroke="#efefef"/>
+<text x="462.0" y="1052.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.90</text>
+<line x1="470" y1="985.3" x2="1066" y2="985.3" stroke="#efefef"/>
+<text x="462.0" y="989.3" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.29</text>
+<line x1="470" y1="922.7" x2="1066" y2="922.7" stroke="#efefef"/>
+<text x="462.0" y="926.7" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.68</text>
+<line x1="470" y1="860.0" x2="1066" y2="860.0" stroke="#efefef"/>
+<text x="462.0" y="864.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">58.08</text>
+<polyline points="470.0,868.0 1066.0,1040.0" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="470.0" cy="868.0" r="6" fill="#d7263d"/>
+<text x="470.0" y="856.0" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">0.01: 58.027</text>
+<circle cx="458.0" cy="868.0" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="470.0" y="1066.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">0.01</text>
+<circle cx="1066.0" cy="1040.0" r="6" fill="#d7263d"/>
+<text x="1066.0" y="1028.0" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">0.03: 56.950</text>
+<circle cx="1054.0" cy="1040.0" r="3.2" fill="#2878ff" opacity="0.85"/>
+<text x="1066.0" y="1066.0" font-size="11" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">0.03</text>
+<text x="768.0" y="1080.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">edge_sobel_thr_abs</text>
+</svg>

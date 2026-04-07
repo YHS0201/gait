@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1120" viewBox="0 0 1500 1120">
+<rect width="100%" height="100%" fill="#fafafa"/>
+<text x="34.0" y="38.0" font-size="28" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">OpenGait Fixed Slice Analysis</text>
+<text x="34.0" y="64.0" font-size="14" font-weight="normal" text-anchor="start" fill="#555" font-family="Segoe UI, Arial, sans-serif">Different edge threshold pairs, each panel shows mean metric trend over mask_ratio</text>
+<rect x="60" y="110" width="660" height="420" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="74.0" y="134.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Single-Parameter Slice</text>
+<text x="74.0" y="156.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed edge_sobel_thr_ratio=0.15, edge_sobel_thr_abs=0.01 (n=5)</text>
+<line x1="115" y1="492.0" x2="696" y2="492.0" stroke="#efefef"/>
+<text x="107.0" y="496.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.12</text>
+<line x1="115" y1="388.0" x2="696" y2="388.0" stroke="#efefef"/>
+<text x="107.0" y="392.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.79</text>
+<line x1="115" y1="284.0" x2="696" y2="284.0" stroke="#efefef"/>
+<text x="107.0" y="288.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.47</text>
+<line x1="115" y1="180.0" x2="696" y2="180.0" stroke="#efefef"/>
+<text x="107.0" y="184.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">58.14</text>
+<polyline points="115.0,367.0 696.0,239.4" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="115.0" cy="367.0" r="6" fill="#d7263d"/>
+<text x="115.0" y="355.0" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=56.930 (n=3)</text>
+<circle cx="105.0" cy="187.7" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="115.0" cy="429.0" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="125.0" cy="484.3" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="696.0" cy="239.4" r="6" fill="#d7263d"/>
+<text x="696.0" y="227.4" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=57.753 (n=2)</text>
+<circle cx="686.0" cy="222.4" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="696.0" cy="256.5" r="3.5" fill="#2878ff" opacity="0.85"/>
+<text x="405.5" y="520.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">mask_ratio</text>
+<rect x="780" y="110" width="660" height="420" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="794.0" y="134.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Single-Parameter Slice</text>
+<text x="794.0" y="156.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed edge_sobel_thr_ratio=0.3, edge_sobel_thr_abs=0.02 (n=4)</text>
+<line x1="835" y1="492.0" x2="1416" y2="492.0" stroke="#efefef"/>
+<text x="827.0" y="496.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.16</text>
+<line x1="835" y1="388.0" x2="1416" y2="388.0" stroke="#efefef"/>
+<text x="827.0" y="392.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.70</text>
+<line x1="835" y1="284.0" x2="1416" y2="284.0" stroke="#efefef"/>
+<text x="827.0" y="288.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.24</text>
+<line x1="835" y1="180.0" x2="1416" y2="180.0" stroke="#efefef"/>
+<text x="827.0" y="184.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.78</text>
+<polyline points="835.0,205.8 1028.7,482.3 1416.0,426.9" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="835.0" cy="205.8" r="6" fill="#d7263d"/>
+<text x="835.0" y="193.8" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=57.643 (n=2)</text>
+<circle cx="825.0" cy="189.7" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="835.0" cy="221.9" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="1028.7" cy="482.3" r="6" fill="#d7263d"/>
+<text x="1028.7" y="470.3" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=56.213 (n=1)</text>
+<circle cx="1028.7" cy="482.3" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="1416.0" cy="426.9" r="6" fill="#d7263d"/>
+<text x="1416.0" y="414.9" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=56.500 (n=1)</text>
+<circle cx="1416.0" cy="426.9" r="3.5" fill="#2878ff" opacity="0.85"/>
+<text x="1125.5" y="520.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">mask_ratio</text>
+<rect x="60" y="580" width="660" height="420" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="74.0" y="604.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Single-Parameter Slice</text>
+<text x="74.0" y="626.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed edge_sobel_thr_ratio=0.35, edge_sobel_thr_abs=0.03 (n=3)</text>
+<line x1="115" y1="962.0" x2="696" y2="962.0" stroke="#efefef"/>
+<text x="107.0" y="966.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.96</text>
+<line x1="115" y1="858.0" x2="696" y2="858.0" stroke="#efefef"/>
+<text x="107.0" y="862.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.32</text>
+<line x1="115" y1="754.0" x2="696" y2="754.0" stroke="#efefef"/>
+<text x="107.0" y="758.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.67</text>
+<line x1="115" y1="650.0" x2="696" y2="650.0" stroke="#efefef"/>
+<text x="107.0" y="654.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">58.03</text>
+<polyline points="115.0,947.3 502.3,721.4 696.0,664.7" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="115.0" cy="947.3" r="6" fill="#d7263d"/>
+<text x="115.0" y="935.3" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=57.013 (n=1)</text>
+<circle cx="115.0" cy="947.3" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="502.3" cy="721.4" r="6" fill="#d7263d"/>
+<text x="502.3" y="709.4" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=57.783 (n=1)</text>
+<circle cx="502.3" cy="721.4" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="696.0" cy="664.7" r="6" fill="#d7263d"/>
+<text x="696.0" y="652.7" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=57.977 (n=1)</text>
+<circle cx="696.0" cy="664.7" r="3.5" fill="#2878ff" opacity="0.85"/>
+<text x="405.5" y="990.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">mask_ratio</text>
+<rect x="780" y="580" width="660" height="420" rx="10" fill="#ffffff" stroke="#d8d8d8"/>
+<text x="794.0" y="604.0" font-size="18" font-weight="bold" text-anchor="start" fill="#222" font-family="Segoe UI, Arial, sans-serif">Single-Parameter Slice</text>
+<text x="794.0" y="626.0" font-size="12" font-weight="normal" text-anchor="start" fill="#666" font-family="Segoe UI, Arial, sans-serif">fixed edge_sobel_thr_ratio=0.25, edge_sobel_thr_abs=0.0 (n=3)</text>
+<line x1="835" y1="962.0" x2="1416" y2="962.0" stroke="#efefef"/>
+<text x="827.0" y="966.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.82</text>
+<line x1="835" y1="858.0" x2="1416" y2="858.0" stroke="#efefef"/>
+<text x="827.0" y="862.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">56.98</text>
+<line x1="835" y1="754.0" x2="1416" y2="754.0" stroke="#efefef"/>
+<text x="827.0" y="758.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.15</text>
+<line x1="835" y1="650.0" x2="1416" y2="650.0" stroke="#efefef"/>
+<text x="827.0" y="654.0" font-size="11" font-weight="normal" text-anchor="end" fill="#666" font-family="Segoe UI, Arial, sans-serif">57.31</text>
+<polyline points="835.0,806.0 1416.0,875.6" fill="none" stroke="#d7263d" stroke-width="3"/>
+<circle cx="835.0" cy="806.0" r="6" fill="#d7263d"/>
+<text x="835.0" y="794.0" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=57.067 (n=2)</text>
+<circle cx="825.0" cy="681.6" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="835.0" cy="930.4" r="3.5" fill="#2878ff" opacity="0.85"/>
+<circle cx="1416.0" cy="875.6" r="6" fill="#d7263d"/>
+<text x="1416.0" y="863.6" font-size="10" font-weight="normal" text-anchor="middle" fill="#444" font-family="Segoe UI, Arial, sans-serif">mean=56.957 (n=1)</text>
+<circle cx="1416.0" cy="875.6" r="3.5" fill="#2878ff" opacity="0.85"/>
+<text x="1125.5" y="990.0" font-size="12" font-weight="normal" text-anchor="middle" fill="#666" font-family="Segoe UI, Arial, sans-serif">mask_ratio</text>
+</svg>

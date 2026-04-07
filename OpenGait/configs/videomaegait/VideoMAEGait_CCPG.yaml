@@ -1,0 +1,97 @@
+data_cfg:
+  dataset_name: CCPG
+  dataset_root: ./ccpg_pkl # use datasets/pretreatment_rgb.py for data preprocessing!
+  dataset_partition: ./datasets/CCPG/CCPG.json
+  data_in_use: [True, False] # images / real_ratios
+  num_workers: 4
+  remove_no_gallery: false # Remove probe if no gallery for it
+  test_dataset_name: CCPG
+
+evaluator_cfg:
+  enable_float16: true
+  restore_ckpt_strict: true
+  restore_hint: 40000
+  save_name: VideoMAEGait
+  eval_func: evaluate_CCPG
+  sampler:
+    batch_shuffle: false
+    batch_size: 4
+    sample_type: fixed_ordered  # 改为固定帧数采样
+    frames_num_fixed: 30
+    frames_skip_num: 2
+  metric: euc
+  transform:
+    - type: BaseRgbTransform
+
+
+loss_cfg:
+  - loss_term_weight: 1.0
+    margin: 0.2
+    type: TripletLoss
+    log_prefix: triplet
+  - loss_term_weight: 1.0
+    scale: 16
+    type: CrossEntropyLoss
+    log_prefix: softmax
+    log_accuracy: true
+
+model_cfg:
+  model: VideoMAEGait
+  # VideoMAE预训练权重路径
+  videomae_ckpt: ./opengait/modeling/models/videomae/checkpoints/ccpg_videomae_base_16x2_mask0.90_e800_4gpu/checkpoint-799.pth
+  img_size: [256, 128]
+  patch_size: 16
+  tubelet_size: 2
+  # HPP配置
+  bin_num:
+    - 16
+  # SeparateFCs配置 - 输入通道需与VideoMAE输出维度匹配
+  SeparateFCs:
+    in_channels: 768  # VideoMAE-small的输出维度是384
+    out_channels: 256
+    parts_num: 16
+  # SeparateBNNecks配置
+  SeparateBNNecks:
+    class_num: 100
+    in_channels: 256
+    parts_num: 16
+
+optimizer_cfg:
+  lr: 0.01  # 降低学习率，因为backbone是预训练的
+  momentum: 0.9
+  solver: SGD
+  weight_decay: 0.0005
+
+scheduler_cfg:
+  gamma: 0.1
+  milestones:
+    - 10000  # 调整里程碑，因为backbone已预训练
+    - 20000
+    - 30000
+  scheduler: MultiStepLR
+
+trainer_cfg:
+  enable_float16: true
+  fix_BN: false
+  with_test: true
+  log_iter: 100
+  restore_ckpt_strict: true
+  restore_hint: 0
+  save_iter: 10000
+  save_name: VideoMAEGait
+  sync_BN: true
+  total_iter: 40000  
+  sampler:
+    batch_shuffle: true
+    batch_size:
+      - 8   # TripletSampler: Number of Identity
+      - 8  # 减少每个身份的序列数，因为VideoMAE计算量更大
+    #frames_num_fixed: 16
+    frames_num_fixed: 30
+    frames_skip_num: 2
+    #frames_num_max: 40
+    #frames_num_min: 20
+    sample_type: fixed_ordered
+    type: TripletSampler
+  transform:
+    - type: BaseRgbTransform

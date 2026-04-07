@@ -32,3 +32,18 @@
 # CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=8 opengait/main.py --cfgs ./configs/gaitgl/gaitgl_OUMVLP.yaml --phase train
 
 # CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch --nproc_per_node=4 opengait/main.py --cfgs ./configs/deepgaitvt2/DeepGaitV2_casiab.yaml --phase train
+
+
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 opengait/main.py --cfgs ./configs/biggait/BigGait_CCPG.yaml --phase train
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 opengait/main.py --cfgs ./configs/videomaegait/VideoMAEGait_CCPG.yaml --phase train
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 opengait/main.py --cfgs ./configs/videomaegait/VideoMAEGait_casiab.yaml --phase train
+tensorboard --logdir=summary
+
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 opengait/main.py --cfgs ./configs/videomaegait/VideoGait_CCPG.yaml --phase train
+
+
+python3 ./datasets/data.py --rgb_root ./ccpg --sil_root ./CCPG_G_SIL --out_root ./ccpg-videomae-pkl --rgb_h 128 --rgb_w 64 --aligned_h 64 --aligned_w 64
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 opengait/main.py --cfgs ./configs/swingait/swingait3D_B1122C2_CCPG.yaml --phase train

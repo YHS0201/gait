@@ -9,6 +9,13 @@ from utils import is_list, is_dict, get_valid_args
 
 class NoOperation():
     def __call__(self, x):
+        # 保持数值不变，但确保为浮点类型以支持 requires_grad
+        try:
+            import numpy as _np
+            if isinstance(x, _np.ndarray):
+                return x.astype(_np.float32, copy=False)
+        except Exception:
+            pass
         return x
 
 

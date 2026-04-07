@@ -422,9 +422,20 @@ class BaseModel(MetaModel, nn.Module):
             visual_summary['scalar/learning_rate'] = model.optimizer.param_groups[0]['lr']
 
             model.msg_mgr.train_step(loss_info, visual_summary)
-            if model.iteration % model.engine_cfg['save_iter'] == 0:
+            # 分布式同步：按全局最小迭代触发测试，避免不同rank在不同步迭代进入评估导致通信序列不一致
+            global_iter = model.iteration
+            try:
+                if torch.distributed.is_initialized():
+                    t = torch.tensor([model.iteration], device=torch.cuda.current_device())
+                    torch.distributed.all_reduce(t, op=torch.distributed.ReduceOp.MIN)
+                    global_iter = int(t.item())
+            except Exception:
+                pass
+            if global_iter % model.engine_cfg['save_iter'] == 0 and global_iter != 0:
+                if torch.distributed.is_initialized():
+                    torch.distributed.barrier()
                 # save the checkpoint
-                model.save_ckpt(model.iteration)
+                model.save_ckpt(global_iter)
 
                 # run test if with_test = true
                 if model.engine_cfg['with_test']:
@@ -437,6 +448,8 @@ class BaseModel(MetaModel, nn.Module):
                     if result_dict:
                         model.msg_mgr.write_to_tensorboard(result_dict)
                     model.msg_mgr.reset_time()
+                if torch.distributed.is_initialized():
+                    torch.distributed.barrier()
             if model.iteration >= model.engine_cfg['total_iter']:
                 break
 

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenGait 5D Heatmap Explorer</title>
+  <style>
+    :root {
+      --bg: #f6f6f2;
+      --panel: #ffffff;
+      --line: #d7d5cf;
+      --text: #1c1c1c;
+      --muted: #666157;
+      --accent: #b33a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, #fff9ef 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: "Segoe UI", "PingFang SC", sans-serif;
+    }
+    .wrap { max-width: 1700px; margin: 0 auto; padding: 28px; }
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    .sub { color: var(--muted); margin-bottom: 22px; }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: 12px;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      backdrop-filter: blur(10px);
+    }
+    label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+    select {
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid #ccc7bc;
+      background: #fff;
+      padding: 0 10px;
+      color: var(--text);
+    }
+    .summary { margin: 16px 0 18px; color: var(--muted); font-size: 14px; }
+    .legend { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .legend-bar {
+      width: 260px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: linear-gradient(90deg, #2e60e4 0%, #8bbf83 50%, #d64a4a 100%);
+    }
+    .grid { display: grid; gap: 14px; }
+    .facet {
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      min-height: 220px;
+    }
+    .facet-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+    .heatmap {
+      display: grid;
+      gap: 2px;
+      align-items: stretch;
+      justify-items: stretch;
+    }
+    .y-label, .x-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 12px;
+      min-height: 28px;
+      min-width: 56px;
+    }
+    .cell {
+      min-width: 92px;
+      min-height: 54px;
+      border-radius: 10px;
+      padding: 6px;
+      border: 1px solid rgba(255,255,255,0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+    .cell.empty { background: #ece9e1; color: #9b9588; }
+    .cell .m { font-weight: 700; font-size: 12px; }
+    .cell .n { opacity: 0.86; }
+    .empty-note { color: #9b9588; font-size: 13px; padding: 20px 8px; }
+    @media (max-width: 1200px) {
+      .controls { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>OpenGait 5D Heatmap Explorer</h1>
+    <div class="sub">4 个维度分面显示，剩下 1 个维度用筛选控制；颜色表示平均 metric。</div>
+
+    <div class="controls">
+      <label>横轴
+        <select id="xDim"></select>
+      </label>
+      <label>纵轴
+        <select id="yDim"></select>
+      </label>
+      <label>分面行
+        <select id="rowDim"></select>
+      </label>
+      <label>分面列
+        <select id="colDim"></select>
+      </label>
+      <label>筛选维度
+        <select id="filterDim"></select>
+      </label>
+      <label>筛选值
+        <select id="filterVal"></select>
+      </label>
+    </div>
+
+    <div class="summary" id="summary"></div>
+    <div class="legend">
+      <span>低</span>
+      <div class="legend-bar"></div>
+      <span>高</span>
+      <span id="legendRange"></span>
+    </div>
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <script>
+    const data = [{"trial_id": 1, "metric": 56.75, "params": {"mask_ratio": 0.5, "lambda": 1.0, "lambda_edge": 3.0, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.02}}, {"trial_id": 2, "metric": 56.99666666666667, "params": {"mask_ratio": 0.5, "lambda": 18.0, "lambda_edge": 1.5, "edge_sobel_thr_ratio": 0.2, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 3, "metric": 57.64666666666667, "params": {"mask_ratio": 0.3, "lambda": 10.5, "lambda_edge": 1.0, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.02}}, {"trial_id": 4, "metric": 56.81666666666666, "params": {"mask_ratio": 0.4, "lambda": 5.0, "lambda_edge": 6.0, "edge_sobel_thr_ratio": 0.3, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 5, "metric": 57.46666666666667, "params": {"mask_ratio": 0.5, "lambda": 14.0, "lambda_edge": 3.5, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.03}}, {"trial_id": 6, "metric": 57.72666666666667, "params": {"mask_ratio": 0.3, "lambda": 2.5, "lambda_edge": 1.5, "edge_sobel_thr_ratio": 0.3, "edge_sobel_thr_abs": 0.02}}, {"trial_id": 7, "metric": 57.339999999999996, "params": {"mask_ratio": 0.5, "lambda": 14.5, "lambda_edge": 5.5, "edge_sobel_thr_ratio": 0.35, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 8, "metric": 56.21333333333333, "params": {"mask_ratio": 0.4, "lambda": 16.5, "lambda_edge": 6.5, "edge_sobel_thr_ratio": 0.3, "edge_sobel_thr_abs": 0.02}}, {"trial_id": 9, "metric": 57.02333333333334, "params": {"mask_ratio": 0.5, "lambda": 1.5, "lambda_edge": 2.5, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 10, "metric": 57.156666666666666, "params": {"mask_ratio": 0.3, "lambda": 2.5, "lambda_edge": 3.0, "edge_sobel_thr_ratio": 0.25, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 11, "metric": 57.69333333333333, "params": {"mask_ratio": 0.3, "lambda": 4.5, "lambda_edge": 3.0, "edge_sobel_thr_ratio": 0.35, "edge_sobel_thr_abs": 0.02}}, {"trial_id": 12, "metric": 57.86333333333334, "params": {"mask_ratio": 0.4, "lambda": 4.0, "lambda_edge": 7.5, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 13, "metric": 56.333333333333336, "params": {"mask_ratio": 0.6, "lambda": 13.0, "lambda_edge": 6.0, "edge_sobel_thr_ratio": 0.25, "edge_sobel_thr_abs": 0.03}}, {"trial_id": 14, "metric": 57.28333333333333, "params": {"mask_ratio": 0.5, "lambda": 5.0, "lambda_edge": 1.0, "edge_sobel_thr_ratio": 0.2, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 15, "metric": 57.36666666666667, "params": {"mask_ratio": 0.3, "lambda": 19.0, "lambda_edge": 9.0, "edge_sobel_thr_ratio": 0.2, "edge_sobel_thr_abs": 0.02}}, {"trial_id": 16, "metric": 57.643333333333324, "params": {"mask_ratio": 0.4, "lambda": 18.5, "lambda_edge": 5.0, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 17, "metric": 56.71333333333334, "params": {"mask_ratio": 0.4, "lambda": 5.5, "lambda_edge": 6.0, "edge_sobel_thr_ratio": 0.3, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 18, "metric": 57.25, "params": {"mask_ratio": 0.3, "lambda": 20.0, "lambda_edge": 5.5, "edge_sobel_thr_ratio": 0.1, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 19, "metric": 56.95333333333334, "params": {"mask_ratio": 0.2, "lambda": 12.5, "lambda_edge": 8.0, "edge_sobel_thr_ratio": 0.2, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 20, "metric": 57.78333333333333, "params": {"mask_ratio": 0.4, "lambda": 20.0, "lambda_edge": 5.5, "edge_sobel_thr_ratio": 0.35, "edge_sobel_thr_abs": 0.03}}, {"trial_id": 21, "metric": 57.916666666666664, "params": {"mask_ratio": 0.2, "lambda": 14.5, "lambda_edge": 7.0, "edge_sobel_thr_ratio": 0.25, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 22, "metric": 56.949999999999996, "params": {"mask_ratio": 0.5, "lambda": 2.5, "lambda_edge": 4.5, "edge_sobel_thr_ratio": 0.2, "edge_sobel_thr_abs": 0.03}}, {"trial_id": 23, "metric": 56.970000000000006, "params": {"mask_ratio": 0.6, "lambda": 5.5, "lambda_edge": 5.5, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.03}}, {"trial_id": 24, "metric": 57.26333333333333, "params": {"mask_ratio": 0.5, "lambda": 6.5, "lambda_edge": 6.5, "edge_sobel_thr_ratio": 0.25, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 25, "metric": 56.870000000000005, "params": {"mask_ratio": 0.5, "lambda": 11.0, "lambda_edge": 8.0, "edge_sobel_thr_ratio": 0.25, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 26, "metric": 57.56, "params": {"mask_ratio": 0.3, "lambda": 1.0, "lambda_edge": 9.5, "edge_sobel_thr_ratio": 0.3, "edge_sobel_thr_abs": 0.02}}, {"trial_id": 27, "metric": 57.25666666666667, "params": {"mask_ratio": 0.3, "lambda": 1.5, "lambda_edge": 9.0, "edge_sobel_thr_ratio": 0.35, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 28, "metric": 57.24666666666667, "params": {"mask_ratio": 0.4, "lambda": 2.0, "lambda_edge": 7.5, "edge_sobel_thr_ratio": 0.3, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 29, "metric": 57.616666666666674, "params": {"mask_ratio": 0.4, "lambda": 11.0, "lambda_edge": 3.0, "edge_sobel_thr_ratio": 0.3, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 30, "metric": 56.53, "params": {"mask_ratio": 0.3, "lambda": 11.0, "lambda_edge": 7.5, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 31, "metric": 56.95666666666667, "params": {"mask_ratio": 0.6, "lambda": 13.0, "lambda_edge": 4.5, "edge_sobel_thr_ratio": 0.25, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 32, "metric": 58.086666666666666, "params": {"mask_ratio": 0.3, "lambda": 7.0, "lambda_edge": 6.0, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 33, "metric": 57.01333333333333, "params": {"mask_ratio": 0.2, "lambda": 13.0, "lambda_edge": 2.5, "edge_sobel_thr_ratio": 0.35, "edge_sobel_thr_abs": 0.03}}, {"trial_id": 34, "metric": 57.96666666666667, "params": {"mask_ratio": 0.2, "lambda": 5.0, "lambda_edge": 7.0, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.0}}, {"trial_id": 35, "metric": 56.5, "params": {"mask_ratio": 0.6, "lambda": 11.5, "lambda_edge": 5.0, "edge_sobel_thr_ratio": 0.3, "edge_sobel_thr_abs": 0.02}}, {"trial_id": 36, "metric": 58.026666666666664, "params": {"mask_ratio": 0.3, "lambda": 2.5, "lambda_edge": 4.5, "edge_sobel_thr_ratio": 0.2, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 37, "metric": 57.72, "params": {"mask_ratio": 0.5, "lambda": 13.5, "lambda_edge": 10.0, "edge_sobel_thr_ratio": 0.1, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 38, "metric": 56.17333333333334, "params": {"mask_ratio": 0.3, "lambda": 17.5, "lambda_edge": 3.0, "edge_sobel_thr_ratio": 0.15, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 39, "metric": 57.336666666666666, "params": {"mask_ratio": 0.4, "lambda": 6.0, "lambda_edge": 3.0, "edge_sobel_thr_ratio": 0.35, "edge_sobel_thr_abs": 0.01}}, {"trial_id": 40, "metric": 57.97666666666667, "params": {"mask_ratio": 0.5, "lambda": 11.0, "lambda_edge": 1.0, "edge_sobel_thr_ratio": 0.35, "edge_sobel_thr_abs": 0.03}}];
+    const dims = ["mask_ratio", "lambda", "lambda_edge", "edge_sobel_thr_ratio", "edge_sobel_thr_abs"];
+
+    const defaults = {
+      xDim: 'mask_ratio',
+      yDim: 'lambda',
+      rowDim: 'edge_sobel_thr_ratio',
+      colDim: 'edge_sobel_thr_abs',
+      filterDim: 'lambda_edge'
+    };
+
+    const state = { ...defaults, filterVal: null };
+
+    function uniqueSorted(values) {
+      return [...new Set(values)].sort((a, b) => Number(a) - Number(b));
+    }
+
+    function clamp01(value) {
+      return Math.max(0, Math.min(1, value));
+    }
+
+    function scoreToColor(value, min, max) {
+      const t = max === min ? 0.5 : clamp01((value - min) / (max - min));
+      const r = Math.round(46 + (214 - 46) * t);
+      const g = Math.round(96 + (191 - Math.abs(t - 0.5) * 2 * 95));
+      const b = Math.round(228 + (74 - 228) * t);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function ensureUniqueDims(changedKey) {
+      const used = new Set();
+      const order = ['xDim', 'yDim', 'rowDim', 'colDim', 'filterDim'];
+      for (const key of order) {
+        if (key === changedKey) {
+          used.add(state[key]);
+          continue;
+        }
+        if (!used.has(state[key])) {
+          used.add(state[key]);
+          continue;
+        }
+        state[key] = dims.find(dim => !used.has(dim));
+        used.add(state[key]);
+      }
+    }
+
+    function populateSelect(selectId, selected, excluded = []) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = '';
+      dims.filter(dim => !excluded.includes(dim)).forEach(dim => {
+        const option = document.createElement('option');
+        option.value = dim;
+        option.textContent = dim;
+        option.selected = dim === selected;
+        select.appendChild(option);
+      });
+    }
+
+    function populateFilterValues() {
+      const values = uniqueSorted(data.map(item => item.params[state.filterDim]));
+      const select = document.getElementById('filterVal');
+      select.innerHTML = '';
+      values.forEach(value => {
+        const option = document.createElement('option');
+        option.value = String(value);
+        option.textContent = String(value);
+        option.selected = state.filterVal === null ? value === values[0] : String(value) === String(state.filterVal);
+        select.appendChild(option);
+      });
+      state.filterVal = select.value;
+    }
+
+    function rebuildControls(changedKey = null) {
+      if (changedKey) ensureUniqueDims(changedKey);
+      populateSelect('xDim', state.xDim);
+      populateSelect('yDim', state.yDim);
+      populateSelect('rowDim', state.rowDim);
+      populateSelect('colDim', state.colDim);
+      populateSelect('filterDim', state.filterDim);
+      populateFilterValues();
+    }
+
+    function aggregate(filtered) {
+      const buckets = new Map();
+      for (const item of filtered) {
+        const rowValue = item.params[state.rowDim];
+        const colValue = item.params[state.colDim];
+        const xValue = item.params[state.xDim];
+        const yValue = item.params[state.yDim];
+        const key = [rowValue, colValue, xValue, yValue].join('|');
+        if (!buckets.has(key)) {
+          buckets.set(key, { rowValue, colValue, xValue, yValue, metrics: [] });
+        }
+        buckets.get(key).metrics.push(item.metric);
+      }
+      return [...buckets.values()].map(entry => {
+        const mean = entry.metrics.reduce((a, b) => a + b, 0) / entry.metrics.length;
+        return { ...entry, mean, count: entry.metrics.length };
+      });
+    }
+
+    function render() {
+      const filtered = data.filter(item => String(item.params[state.filterDim]) === String(state.filterVal));
+      const aggregated = aggregate(filtered);
+      const rows = uniqueSorted(filtered.map(item => item.params[state.rowDim]));
+      const cols = uniqueSorted(filtered.map(item => item.params[state.colDim]));
+      const xs = uniqueSorted(filtered.map(item => item.params[state.xDim]));
+      const ys = uniqueSorted(filtered.map(item => item.params[state.yDim]));
+      const metrics = aggregated.map(item => item.mean);
+      const minMetric = metrics.length ? Math.min(...metrics) : 0;
+      const maxMetric = metrics.length ? Math.max(...metrics) : 1;
+
+      document.getElementById('summary').textContent = `当前显示: filter ${state.filterDim}=${state.filterVal}，${filtered.length} 个 trial，${aggregated.length} 个聚合单元。`;
+      document.getElementById('legendRange').textContent = `mean metric: ${minMetric.toFixed(3)} - ${maxMetric.toFixed(3)}`;
+
+      const grid = document.getElementById('grid');
+      grid.style.gridTemplateColumns = `repeat(${Math.max(cols.length, 1)}, minmax(320px, 1fr))`;
+      grid.innerHTML = '';
+
+      if (!filtered.length) {
+        const note = document.createElement('div');
+        note.className = 'empty-note';
+        note.textContent = '当前筛选下没有数据。';
+        grid.appendChild(note);
+        return;
+      }
+
+      for (const rowValue of rows) {
+        for (const colValue of cols) {
+          const facet = document.createElement('div');
+          facet.className = 'facet';
+          const title = document.createElement('div');
+          title.className = 'facet-title';
+          title.textContent = `${state.rowDim}=${rowValue}, ${state.colDim}=${colValue}`;
+          facet.appendChild(title);
+
+          const heatmap = document.createElement('div');
+          heatmap.className = 'heatmap';
+          heatmap.style.gridTemplateColumns = `70px repeat(${xs.length}, minmax(92px, 1fr))`;
+          heatmap.style.gridTemplateRows = `30px repeat(${ys.length}, minmax(54px, auto))`;
+
+          const corner = document.createElement('div');
+          corner.className = 'x-label';
+          corner.textContent = `${state.yDim} \ ${state.xDim}`;
+          heatmap.appendChild(corner);
+
+          for (const xValue of xs) {
+            const xLabel = document.createElement('div');
+            xLabel.className = 'x-label';
+            xLabel.textContent = xValue;
+            heatmap.appendChild(xLabel);
+          }
+
+          const facetData = aggregated.filter(item => item.rowValue === rowValue && item.colValue === colValue);
+          for (const yValue of [...ys].reverse()) {
+            const yLabel = document.createElement('div');
+            yLabel.className = 'y-label';
+            yLabel.textContent = yValue;
+            heatmap.appendChild(yLabel);
+
+            for (const xValue of xs) {
+              const cell = document.createElement('div');
+              const entry = facetData.find(item => item.xValue === xValue && item.yValue === yValue);
+              if (!entry) {
+                cell.className = 'cell empty';
+                cell.textContent = '-';
+              } else {
+                cell.className = 'cell';
+                cell.style.background = scoreToColor(entry.mean, minMetric, maxMetric);
+                cell.innerHTML = `<div class="m">${entry.mean.toFixed(2)}</div><div class="n">n=${entry.count}</div>`;
+                cell.title = `mean=${entry.mean.toFixed(3)}, count=${entry.count}`;
+              }
+              heatmap.appendChild(cell);
+            }
+          }
+
+          facet.appendChild(heatmap);
+          grid.appendChild(facet);
+        }
+      }
+    }
+
+    function bindControl(selectId, stateKey) {
+      document.getElementById(selectId).addEventListener('change', event => {
+        state[stateKey] = event.target.value;
+        rebuildControls(stateKey);
+        render();
+      });
+    }
+
+    rebuildControls();
+    bindControl('xDim', 'xDim');
+    bindControl('yDim', 'yDim');
+    bindControl('rowDim', 'rowDim');
+    bindControl('colDim', 'colDim');
+    bindControl('filterDim', 'filterDim');
+    document.getElementById('filterVal').addEventListener('change', event => {
+      state.filterVal = event.target.value;
+      render();
+    });
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Local Python environment
+/.venv/
+
+# Python cache
+**/__pycache__/
+*.py[cod]
+
+# Notebook/editor cache
+**/.ipynb_checkpoints/
+
+# Training/test outputs
+/output/
+
+# Local logs and temporary files
+*.log
+
+# Dataset directories that should stay local
+/ccpg_pkl/
+/ccpg/
+/CASIA-B/
+/CASIA-B-pkl/
+/CCPG_G_SIL/
+/CCPG-end2end-pkl/
+/ccpg-videomae-pkl/

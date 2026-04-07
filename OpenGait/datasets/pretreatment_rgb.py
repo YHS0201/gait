@@ -42,7 +42,7 @@ def job(src, id):
                 img = cv2.imread(img_path)
                 ratio = img.shape[1]/img.shape[0]
                 ratios.append(ratio)
-                aligned_img = np.transpose(cv2.cvtColor(resize_with_padding(img, (256, 128)), cv2.COLOR_BGR2RGB), (2, 0, 1))
+                aligned_img = np.transpose(cv2.cvtColor(resize_with_padding(img, (128, 64)), cv2.COLOR_BGR2RGB), (2, 0, 1))
                 aligned_imgs.append(aligned_img)
             if len(aligned_imgs) > 0:
                 output_path = os.path.join(DST, id, ty, vi)
