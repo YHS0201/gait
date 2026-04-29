@@ -1,0 +1,119 @@
+data_cfg:
+  dataset_name: CompanyFree
+  dataset_root: /data1/all_data_pkl_new
+  dataset_partition: ./datasets/data0/all_data_20250912_add2503_noise_mini.json
+  num_workers: 1
+  data_in_use: [True]
+  remove_no_gallery: false
+  test_dataset_name: CompanyFree
+
+evaluator_cfg:
+  enable_float16: true
+  restore_ckpt_strict: false
+  restore_hint: 60000
+  save_name: SwinGait3D_B1122_C2_CompanyFreeMini
+  sampler:
+    batch_shuffle: false
+    batch_size: 4
+    sample_type: all_ordered
+    frames_all_limit: 720
+  eval_func: evaluate_reduce_target
+  metric: euc
+  dataset_partition: ./datasets/data0/all_data_20250912_add2503_noise_mini.json
+  save_json: show_result/company_free_mini.json
+  enable_save_csv: false
+  split_eva: false
+  tb_name: company_free_mini
+  transform:
+    - type: Compose
+      trf_cfg:
+        - type: BinarizeSilTransform
+        - type: BaseSilCuttingTransform
+
+loss_cfg:
+  - loss_term_weight: 1.0
+    margin: 0.2
+    type: TripletLoss
+    log_prefix: triplet
+  - loss_term_weight: 1.0
+    scale: 16
+    type: CrossEntropyLoss
+    log_prefix: softmax
+    log_accuracy: true
+
+model_cfg:
+  model: SwinGaitmaev2
+  Backbone:
+    mode: p3d
+    in_channels: 1
+    layers:
+      - 1
+      - 1
+      - 2
+      - 2
+    channels:
+      - 64
+      - 128
+  recon:
+    enabled: true
+    mask_ratio: 0.5
+    lambda: 1.0
+    lambda_edge: 1.0
+    edge_sobel_thr_ratio: 0.2
+    edge_sobel_thr_abs: 0.0
+  bin_num:
+    - 15
+  SeparateBNNecks:
+    in_channels: 256
+    class_num: 256
+    parts_num: 16
+
+optimizer_cfg:
+  lr: 0.001
+  backbone_lr: 0.001
+  decoder_lr: 0.0001
+  momentum: 0.9
+  solver: SGD
+  weight_decay: 0.0005
+
+scheduler_cfg:
+  gamma: 0.1
+  milestones: # Learning Rate Reduction at each milestones
+    - 40000
+    - 60000
+    - 70000
+  scheduler: MultiStepLR
+
+trainer_cfg:
+  enable_float16: true
+  fix_BN: false
+  log_iter: 50
+  with_test: true
+  optimizer_reset: true
+  restore_ckpt_strict: false
+  restore_hint: 0
+  save_iter: 20000
+  save_name: SwinGait3D_B1122_C2_CompanyFreeMini
+  sync_BN: true
+  T_max_iter: 80000
+  total_iter: 80000
+  sampler:
+    batch_shuffle: true
+    batch_size:
+      - 4
+      - 16
+    frames_num_fixed: 30
+    frames_skip_num: 4
+    sample_type: fixed_ordered
+    type: TripletSampler
+  transform:
+    - type: Compose
+      trf_cfg:
+        - type: BinarizeSilTransform
+        - type: RandomPerspective
+          prob: 0.2
+        - type: BaseSilCuttingTransform
+        - type: RandomHorizontalFlip
+          prob: 0.2
+        - type: RandomRotate
+          prob: 0.2

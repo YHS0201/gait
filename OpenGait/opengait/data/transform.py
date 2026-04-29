@@ -65,6 +65,15 @@ class BaseSilCuttingTransform():
         return x / self.divsor
 
 
+class BinarizeSilTransform():
+    def __init__(self, threshold=0.5):
+        self.threshold = threshold
+
+    def __call__(self, x):
+        x = np.asarray(x, dtype=np.float32)
+        return (x > self.threshold).astype(np.float32)
+
+
 class BaseRgbTransform():
     def __init__(self, mean=None, std=None):
         if mean is None:

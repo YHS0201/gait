@@ -14,7 +14,7 @@ evaluator_cfg:
   save_name: SwinGait3D_B1122_C2_G2_stopgrad_shallow
   sampler:
     batch_shuffle: false
-    batch_size: 3
+    batch_size: 4
     sample_type: all_ordered
     frames_all_limit: 720
   eval_func: evaluate_CCPG
@@ -92,7 +92,7 @@ trainer_cfg:
   sampler:
     batch_shuffle: true
     batch_size:
-      - 3
+      - 4
       - 16
     frames_num_fixed: 30
     frames_skip_num: 4

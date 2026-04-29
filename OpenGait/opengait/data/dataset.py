@@ -68,6 +68,8 @@ class DataSet(tordata.Dataset):
 
     def __dataset_parser(self, data_config, training):
         dataset_root = data_config['dataset_root']
+        train_set_key = data_config.get('train_set_key', 'TRAIN_SET')
+        test_set_key = data_config.get('test_set_key', 'TEST_SET')
         try:
             data_in_use = data_config['data_in_use']  # [n], true or false
         except:
@@ -75,8 +77,8 @@ class DataSet(tordata.Dataset):
 
         with open(data_config['dataset_partition'], "rb") as f:
             partition = json.load(f)
-        train_set = partition["TRAIN_SET"]
-        test_set = partition["TEST_SET"]
+        train_set = partition[train_set_key]
+        test_set = partition[test_set_key]
         label_list = os.listdir(dataset_root)
         train_set = [label for label in train_set if label in label_list]
         test_set = [label for label in test_set if label in label_list]

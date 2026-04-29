@@ -20,7 +20,10 @@ evaluator_cfg:
   eval_func: evaluate_CCPG
   metric: euc # cos
   transform:
-    - type: BaseSilCuttingTransform
+    - type: Compose
+      trf_cfg:
+        - type: BinarizeSilTransform
+        - type: BaseSilCuttingTransform
 
 loss_cfg:
   - loss_term_weight: 1.0
@@ -96,6 +99,7 @@ trainer_cfg:
   transform:
     - type: Compose
       trf_cfg:
+        - type: BinarizeSilTransform
         - type: RandomPerspective
           prob: 0.2
         - type: BaseSilCuttingTransform

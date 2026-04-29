@@ -2,13 +2,21 @@ from inspect import isclass
 from pkgutil import iter_modules
 from pathlib import Path
 from importlib import import_module
+import warnings
 
 # iterate through the modules in the current package
 package_dir = Path(__file__).resolve().parent
 for (_, module_name, _) in iter_modules([str(package_dir)]):
 
     # import the module and iterate through its attributes
-    module = import_module(f"{__name__}.{module_name}")
+    try:
+        module = import_module(f"{__name__}.{module_name}")
+    except Exception as exc:
+        warnings.warn(
+            f"Skip importing modeling.models.{module_name}: {exc}",
+            RuntimeWarning,
+        )
+        continue
     for attribute_name in dir(module):
         attribute = getattr(module, attribute_name)
 

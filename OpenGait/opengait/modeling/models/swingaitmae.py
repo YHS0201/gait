@@ -824,9 +824,6 @@ class SwinGaitmae(BaseModel):
         # reconstruction loss weight to avoid decoder dominating
         self.lambda_recon = float(mask_cfg.get('lambda', 1.0))
         self.lambda_edge = float(mask_cfg.get('lambda_edge', 1.0))
-        self.boundary_mask_ratio = float(mask_cfg.get('boundary_mask_ratio', 0.5))
-        self.lambda_edge_full = float(mask_cfg.get('lambda_edge_full', 0.2))
-        self.lambda_edge_dice = float(mask_cfg.get('lambda_edge_dice', 0.5))
         self.edge_sobel_thr_ratio = float(mask_cfg.get('edge_sobel_thr_ratio', 0.2))
         self.edge_sobel_thr_abs = float(mask_cfg.get('edge_sobel_thr_abs', 0.0))
 
@@ -947,26 +944,6 @@ class SwinGaitmae(BaseModel):
         edge = edge.view(B, T, 1, H, W).permute(0, 2, 1, 3, 4).contiguous()
         return edge
 
-    def _build_boundary_band(self, sils):
-        """Build a thin boundary band from silhouette frames for mask sampling."""
-        B, _, T, H, W = sils.shape
-        x2d = sils.permute(0, 2, 1, 3, 4).contiguous().view(B * T, 1, H, W)
-        sil_bin = (x2d > 0.5).to(x2d.dtype)
-        dilate = F.max_pool2d(sil_bin, kernel_size=3, stride=1, padding=1)
-        erode = 1.0 - F.max_pool2d(1.0 - sil_bin, kernel_size=3, stride=1, padding=1)
-        band = (dilate - erode).clamp(0.0, 1.0)
-        band = band.view(B, T, 1, H, W).permute(0, 2, 1, 3, 4).contiguous()
-        return band
-
-    def _masked_dice_loss(self, logits, targets, mask=None, eps=1e-6):
-        probs = torch.sigmoid(logits)
-        if mask is not None:
-            probs = probs * mask
-            targets = targets * mask
-        inter = (probs * targets).sum()
-        denom = probs.sum() + targets.sum()
-        return 1.0 - (2.0 * inter + eps) / (denom + eps)
-
     def forward(self, inputs):
         if self.training:
             adjust_learning_rate(self.optimizer, self.iteration, T_max_iter=self.T_max_iter)
@@ -999,13 +976,9 @@ class SwinGaitmae(BaseModel):
             fg0 = (sils[:, :, 0] > 0).to(torch.float32)  # [B,1,H,W]
             fg_patch = fg0.view(B, 1, grid_h, ph, grid_w, pw).mean(dim=(3, 5))  # [B,1,grid_h,grid_w]
             fg_patch_flat = fg_patch.view(B, num_patches)
-            boundary0 = self._build_boundary_band(sils[:, :, :1]).squeeze(2)
-            boundary_patch = boundary0.view(B, 1, grid_h, ph, grid_w, pw).mean(dim=(3, 5))
-            boundary_patch_flat = boundary_patch.view(B, num_patches)
 
             # patch 被视作“人体区域”的阈值：该 patch 内至少有一定比例为前景
             fg_thr = 0.05
-            boundary_thr = 0.02
 
             # 避免权重全 0；power 越大越偏向于 mask 前景占比更高的 patch
             bg_eps = 1e-2
@@ -1014,7 +987,6 @@ class SwinGaitmae(BaseModel):
             patch_mask_flat = torch.zeros(B, num_patches, device=sils.device, dtype=sils.dtype)
             for b in range(B):
                 fg_mask = fg_patch_flat[b] > fg_thr
-                boundary_mask = (boundary_patch_flat[b] > boundary_thr) & fg_mask
                 num_fg = int(fg_mask.sum().item())
 
                 if num_fg <= 0:
@@ -1031,31 +1003,13 @@ class SwinGaitmae(BaseModel):
                 if num_mask_b <= 0:
                     continue
 
-                num_boundary = min(int(round(num_mask_b * self.boundary_mask_ratio)), int(boundary_mask.sum().item()))
-                num_boundary = max(0, min(num_boundary, num_mask_b))
-
-                selected = []
-                if num_boundary > 0:
-                    boundary_w = (boundary_patch_flat[b] + bg_eps).pow(power)
-                    boundary_w = boundary_w * boundary_mask.to(boundary_w.dtype)
-                    if float(boundary_w.sum()) <= 0.0:
-                        boundary_w = boundary_mask.to(boundary_w.dtype)
-                    boundary_idx = torch.multinomial(boundary_w, num_boundary, replacement=False)
-                    patch_mask_flat[b, boundary_idx] = 1.0
-                    selected.append(boundary_idx)
-
-                remain = num_mask_b - num_boundary
-                if remain > 0:
-                    remain_mask = fg_mask.clone()
-                    if selected:
-                        remain_mask[selected[0]] = False
-                    remain_w = (fg_patch_flat[b] + bg_eps).pow(power)
-                    remain_w = remain_w * remain_mask.to(remain_w.dtype)
-                    if float(remain_w.sum()) <= 0.0:
-                        remain_w = remain_mask.to(remain_w.dtype)
-                    if float(remain_w.sum()) > 0.0:
-                        remain_idx = torch.multinomial(remain_w, remain, replacement=False)
-                        patch_mask_flat[b, remain_idx] = 1.0
+                fg_w = (fg_patch_flat[b] + bg_eps).pow(power)
+                fg_w = fg_w * fg_mask.to(fg_w.dtype)
+                if float(fg_w.sum()) <= 0.0:
+                    fg_w = fg_mask.to(fg_w.dtype)
+                if float(fg_w.sum()) > 0.0:
+                    fg_idx = torch.multinomial(fg_w, num_mask_b, replacement=False)
+                    patch_mask_flat[b, fg_idx] = 1.0
 
             pm = patch_mask_flat.view(B, 1, grid_h, grid_w)
 
@@ -1134,21 +1088,18 @@ class SwinGaitmae(BaseModel):
             denom = m.sum().clamp_min(1.0)
             recon_mse = (diff2 * m).sum() / denom
             edge_bce_map = F.binary_cross_entropy_with_logits(edge_logits_up, edge_target, reduction='none')
-            edge_bce_masked = (edge_bce_map * m).sum() / denom
-            edge_bce_full = edge_bce_map.mean()
-            edge_dice = self._masked_dice_loss(edge_logits_up, edge_target, m)
-            edge_loss = edge_bce_masked + self.lambda_edge_full * edge_bce_full + self.lambda_edge_dice * edge_dice
+            edge_loss = (edge_bce_map * m).sum() / denom
 
             # Attach reconstruction MSE loss (tensor) so LossAggregator can sum it directly
             retval['training_feat']['recon_mse'] = self.lambda_recon * recon_mse
             retval['training_feat']['edge_bce'] = self.lambda_edge * edge_loss
 
             # Visual summaries for reconstruction (training only)
-            retval['visual_summary']['image/recon'] = rearrange(recon_up.detach(), 'n c s h w -> (n s) c h w')
-            retval['visual_summary']['image/recon_edge'] = rearrange(torch.sigmoid(edge_logits_up.detach()), 'n c s h w -> (n s) c h w')
-            retval['visual_summary']['image/target_edge'] = rearrange(edge_target.detach(), 'n c s h w -> (n s) c h w')
-            retval['visual_summary']['image/masked'] = rearrange(masked_sils[:, :, :T], 'n c s h w -> (n s) c h w')
-            retval['visual_summary']['image/target'] = rearrange(target, 'n c s h w -> (n s) c h w')
+            #retval['visual_summary']['image/recon'] = rearrange(recon_up.detach(), 'n c s h w -> (n s) c h w')
+            #retval['visual_summary']['image/recon_edge'] = rearrange(torch.sigmoid(edge_logits_up.detach()), 'n c s h w -> (n s) c h w')
+            #retval['visual_summary']['image/target_edge'] = rearrange(edge_target.detach(), 'n c s h w -> (n s) c h w')
+            #retval['visual_summary']['image/masked'] = rearrange(masked_sils[:, :, :T], 'n c s h w -> (n s) c h w')
+            #retval['visual_summary']['image/target'] = rearrange(target, 'n c s h w -> (n s) c h w')
         # Attach reconstruction MSE loss (tensor) so LossAggregator can sum it directly
         #retval['training_feat']['recon_mse'] = recon_mse
 
