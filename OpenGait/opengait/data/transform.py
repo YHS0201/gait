@@ -66,7 +66,7 @@ class BaseSilCuttingTransform():
 
 
 class BinarizeSilTransform():
-    def __init__(self, threshold=0.5):
+    def __init__(self, threshold=0.0):
         self.threshold = threshold
 
     def __call__(self, x):
